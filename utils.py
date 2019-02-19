@@ -1,6 +1,6 @@
 from functools import partial
 import pymel.core as pm
-from etc.shapes import ControlShapes
+from .shapes import ControlShapes
 
 CONTROL_COLORS = {
     'Left': (1.0, 0.0, 0.0),
@@ -8,6 +8,12 @@ CONTROL_COLORS = {
     'Center': (0.15, 1.0, 1.0),
     'Other': (1.0, 1.0, 0.15)
 }
+
+
+def lockAndHideAttrs(node_list, attr_list=['scaleX', 'scaleY', 'scaleZ']):
+    for node in node_list:
+        for attr_name in attr_list:
+            node.setAttr(attr_name, lock=True, keyable=False)
 
 
 def getPoleVector(start, mid, end):
@@ -53,7 +59,6 @@ def orientJoint(joint, target, up_vector=(0, 1, 0), world_up=(0, 1, 0)):
 
     if parented:
         target.setParent(joint)
-
 
 
 def addSpace(target, control_obj, orient_only=False):
@@ -155,33 +160,3 @@ def createNodeChain(input_xforms, node_func=partial(pm.createNode, 'transform'),
         node_list.append(new_node)
 
     return node_list
-
-
-class RigModule(object):
-    def __init__(self, name, joints, rig_units=None, constraint_func=pm.orientConstraint):
-        self._name = name
-        self._joints = joints
-        self._rig_units = rig_units
-        self.constrain = constraint_func
-
-        self._constraints = list()
-
-    def build(self):
-
-        # Build control groups
-        for unit in self._rig_units:
-            unit.build()
-
-        # Transpose driver lists
-        driver_list = zip(
-            *[unit.drivers for unit in self._rig_units])
-
-        # Constrain objects
-        for i, j in enumerate(self._joints):
-            self._constraints.append(
-                [self.constrain(tgt, j) for tgt in driver_list[i]][0])
-
-        self.postProcess()
-
-    def postProcess(self):
-        pass
