@@ -1,6 +1,7 @@
 import pymel.core as pm
 from .utils import getPoleVector, orientJoint, createControlCurve, lockAndHideAttrs
-from .maps import DazMap, Ue4Map
+from .maps import G8fMap, G8mMap, Ue4Map
+from .jcms import DRIVERS, createWtDrivers
 
 SIDE_COLOR = {
     '_R': (1, 0, 0),
@@ -8,34 +9,62 @@ SIDE_COLOR = {
 }
 
 MAPS = {
-    'daz': DazMap,
+    'g8f': G8fMap,
+    'g8m': G8mMap,
     'ue4': Ue4Map
 }
+
+CTRL_SHAPE_FILES = {
+    'g8f': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/AS5Controls_G8F.mel",
+    'g8m': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/AS5Controls_G8M.mel",
+    'ue4': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/AS5Controls_UE4.mel"
+}
+
+MESH_FILES = {
+    'g8f': "C:/Users/DSY/Documents/Maya/projects/_UE4-Chars/scenes/Mesh/Ref/Mesh_G8F.ma",
+    'g8m': "C:/Users/DSY/Documents/Maya/projects/_UE4-Chars/scenes/Mesh/Ref/Mesh_G8M.ma"
+}
+
+MAT_FILE = "C:/Users/DSY/Documents/Maya/projects/_UE4-Chars/assets/G8_MATS.ma"
 
 
 def initMapper(skel_map_name):
     return MAPS[skel_map_name.lower()]()
 
 
-SKMAP = initMapper('daz')
-JOINT_MAP = SKMAP.joint_map
-MAPPED_JOINTS = SKMAP.jnames_mapped
-UNMAPPED_JOINTS = SKMAP.jnames_unmapped
-XFORMS = SKMAP.custom_xforms
+def setupGeo(skel_map_name):
+    pm.importFile(MESH_FILES[skel_map_name])
+    pm.importFile(MAT_FILE)
+
+    for ns in ['BodyGeo', 'HeadGeo']:
+        pm.skinCluster('Root_M', '{0}:Mesh'.format(ns), skinMethod=1)
+        addBlendShapes(ns)
 
 
-def preBuild():
-    JOINTS = SKMAP.getJoints()
+def addBlendShapes(name_space):
+    pm.select(pm.ls('{0}:Morphs'.format(name_space))
+              [0].listRelatives(), r=True)
+    pm.select('{0}:Mesh'.format(name_space), add=True)
+    pm.blendShape(frontOfChain=1, n='Morphs{0}'.format(
+        name_space.replace('Geo', '')))
 
-    for jnt in MAPPED_JOINTS:
-        joint = JOINTS[jnt]
 
-        tgt_jnt = pm.ls(JOINT_MAP[jnt])[0]
+def preBuild(skel_map_name):
+    sk_map = initMapper(skel_map_name)
+    sk_joints = sk_map.getJoints()
+    sk_joint_map = sk_map.joint_map
+    sk_mapped_joints = sk_map.jnames_mapped
+    sk_xforms = sk_map.custom_xforms
+
+    for jnt in sk_mapped_joints:
+        joint = sk_joints[jnt]
+
+        tgt_jnt = pm.ls(sk_joint_map[jnt])[0]
         pm.move(joint, tgt_jnt.getTranslation(
             space='world'), ws=True, pcp=True)
 
     for jnt in ['Spine1_M', 'Knee_R']:
-        joint = JOINTS[jnt]
+        joint = sk_joints[jnt]
         # Manual transform for spine base
         if jnt == 'Spine1_M':
             pm.move(joint, joint.getParent().getTranslation(
@@ -51,33 +80,116 @@ def preBuild():
             pm.move(joint, (diff_vec[0], 0, diff_vec[-1]),
                     r=True, ws=True, pcp=True)
 
-    for jnt in XFORMS:
-        joint = JOINTS[jnt]
+    for jnt in sk_xforms:
+        joint = sk_joints[jnt]
         pm.move(joint, joint.getParent().getTranslation(
                 space='world'), pcp=True)
-        pm.move(joint, XFORMS[jnt], r=True, ws=True, pcp=True)
+        pm.move(joint, sk_xforms[jnt], r=True, ws=True, pcp=True)
 
     # Center mid joints
-    for jnt in [j for j in JOINTS if j[-2:] == '_M']:
+    for jnt in [j for j in sk_joints if j[-2:] == '_M']:
 
-        pm.move(JOINTS[jnt], 0, x=True, pcp=True)
+        pm.move(sk_joints[jnt], 0, x=True, pcp=True)
 
     # Custom orientations
     for jnt in ['BreastBase_R', 'BreastMid_R']:
-        joint = JOINTS.get(jnt, None)
+        joint = sk_joints.get(jnt, None)
         if joint:
             orientJoint(joint, joint.listRelatives()[0], up_vector=(0, 0, 1))
 
     # Zero out end joint orientations
-    for joint in [jnt for jnt in JOINTS.values() if not jnt.listRelatives()]:
+    for joint in [jnt for jnt in sk_joints.values() if not jnt.listRelatives()]:
         joint.jointOrient.set((0, 0, 0))
 
 
-def postBuild():
+def postBuild(skel_map_name):
     # POST BUILD
-    control_set = pm.ls('ControlSet')[0]
+    obj_sets = {set_name: pm.ls(set_name)[0] for set_name in [
+        'AllSet', 'ControlSet', 'DeformSet']}
 
+    twist_joints = postAddTwistJoints()
+    for set_name in ['AllSet', 'DeformSet']:
+        obj_sets[set_name].addMembers(twist_joints)
+
+    ik_clav = postAddClavicleIK()
+    for set_name in ['AllSet', 'ControlSet']:
+        obj_sets[set_name].addMembers(ik_clav)
+
+    # ADD TOE SWIVEL
+    # REORIENT ARM/LEG IK
+    for ctrljnts in [('IKArm_R', 'Wrist_R'),
+                     ('IKArm_L', 'Wrist_L'),
+                     ('IKLeg_R', 'Ankle_R'),
+                     ('IKLeg_L', 'Ankle_L')]:
+        postOrientIkControl(*pm.ls(ctrljnts))
+
+    # Center pivots for FK/IK controls and set to IK
+    nodes = [ctrl for ctrl in pm.ls(
+        'FKIK*', et='transform') if pm.hasAttr(ctrl, 'FKIKBlend')]
+
+    for ctrl in nodes:
+        pm.xform(ctrl, cp=True)
+        ctrl.FKIKBlend.set(10)
+
+    pm.ls('IKSpine3_M')[0].stretchy.set(0)
+    pm.ls('IKSpline3_M')[0].volume.set(0)
+
+    # Add UE4 IK joints
+    postAddUe4Joints()
+
+    # Update sets
+    postUpdateSets(obj_sets)
+
+    # Lock/hide scale for all controls
+    lockAndHideAttrs([ctrl for ctrl in obj_sets['ControlSet']],
+                     attr_list=['scaleX', 'scaleY', 'scaleZ'])
+    # Lock translate for FK controls
+    lockAndHideAttrs([ctrl for ctrl in obj_sets['ControlSet'] if ctrl.name()[
+                     :2] == 'FK'], attr_list=['translateX', 'translateY', 'translateZ'])
+
+    # Update control colors/shapes
+    setControlShapes(skel_map_name)
+
+
+def postUpdateSets(obj_set_dict):
+    joints = pm.ls('Root_M') + \
+        pm.ls('Root_M')[0].listRelatives(ad=True, type='joint')
+    ctrls = [ctrl for ctrl in obj_set_dict['ControlSet']
+             if ((ctrl.name()[:2] in ['FK', 'IK']) or
+                 (ctrl.name()[:4] in ['AimE', 'Fing', 'Pole', 'Roll', 'Root'])) and
+             'Extra' not in ctrl.name() and
+             'cv' not in ctrl.name()]
+
+    set_members = {'ControlSet': ctrls, 'DeformSet': joints}
+
+    for set_name in ['ControlSet', 'DeformSet']:
+        obj_set_dict[set_name].clear()
+        obj_set_dict[set_name].addMembers(set_members[set_name])
+
+
+def postAddUe4Joints():
+    # Add UE4 IK joints
+    jnt_list = list()
+
+    for ctrl in ['AimEye_M'] + [cname+side
+                                for cname in ['IKArm', 'PoleArm', 'IKLeg', 'PoleLeg']
+                                for side in ['_R', '_L']]:
+
+        jnt = pm.createNode('joint', n='CTRL'+ctrl)
+        jnt.setParent(pm.ls('DeformationSystem')[0])
+        pm.delete(pm.parentConstraint(pm.ls(ctrl)[0], jnt))
+        pm.makeIdentity(jnt, apply=True)
+        pm.parentConstraint(pm.ls(ctrl)[0], jnt)
+
+        jnt_list.append(jnt)
+
+    return jnt_list
+
+
+def postAddTwistJoints():
     # Add twist joints
+    jnt_list = list()
+
     for jname in ['Hip', 'Shoulder', 'Elbow']:
         for side in ['_R', '_L']:
 
@@ -92,7 +204,15 @@ def postBuild():
 
             joint.translateX.set(end_joint.translateX.get()/2.0)
 
+            jnt_list.append(joint)
+
+    return jnt_list
+
+
+def postAddClavicleIK():
     # Add clavicle IK
+    ctrl_list = list()
+
     for side in SIDE_COLOR:
 
         fkctrl = pm.ls('FKScapula'+side)[0]
@@ -120,48 +240,17 @@ def postBuild():
 
         fkctrl.visibility.set(False)
 
-        control_set.add(ctrl)
-        pm.ls('AllSet')[0].add(ctrl)
+        ctrl_list.append(ctrl)
 
-    # ADD TOE SWIVEL
-    # REORIENT ARM/LEG IK
-    for ctrljnts in [('IKArm_R', 'Wrist_R'),
-                     ('IKArm_L', 'Wrist_L'),
-                     ('IKLeg_R', 'Ankle_R'),
-                     ('IKLeg_L', 'Ankle_L')]:
-        orientIkControl(*pm.ls(ctrljnts))
-
-    # Center pivots for FK/IK controls and set to IK
-    nodes = [ctrl for ctrl in pm.ls(
-        'FKIK*', et='transform') if pm.hasAttr(ctrl, 'FKIKBlend')]
-
-    # Set controls to IK
-    for ctrl in nodes:
-        pm.xform(ctrl, cp=True)
-        ctrl.FKIKBlend.set(10)
-
-    # Add joints to deform set
-    for node in pm.ls('Root_M') + pm.ls('Root_M')[0].listRelatives(ad=True, type='joint'):
-        pm.ls('DeformSet')[0].add(node)
-
-    # Lock/hide scale for all controls
-    lockAndHideAttrs([ctrl for ctrl in control_set],
-                     attr_list=['scaleX', 'scaleY', 'scaleZ'])
-    # Lock translate for FK controls
-    lockAndHideAttrs([ctrl for ctrl in control_set if ctrl.name()[
-                     :2] == 'FK'], attr_list=['translateX', 'translateY', 'translateZ'])
-
-    # Re-populate control set
-    ctrl_curves = [ctrl for ctrl in control_set
-                   if ((ctrl.name()[:2] in ['FK', 'IK']) or
-                       (ctrl.name()[:4] in ['AimE', 'Fing', 'Pole', 'Roll', 'Root'])) and
-                   'Extra' not in ctrl.name() and
-                   'cv' not in ctrl.name()]
-    control_set.clear()
-    control_set.addMembers(ctrl_curves)
+    return ctrl_list
 
 
-def orientIkControl(ik_ctrl, joint):
+def setControlShapes(skel_map_name):
+    # Set control colors and shapes
+    pm.mel.source(CTRL_SHAPE_FILES[skel_map_name])
+
+
+def postOrientIkControl(ik_ctrl, joint):
     # NEED TO FIX UP CHILD ROTATE CONSTRAINTS
 
     side = ik_ctrl.name()[-2:]
@@ -195,13 +284,16 @@ def orientIkControl(ik_ctrl, joint):
         ik_ctrl.setCVs(ctrl_cvs, space='world')
         ik_ctrl.updateCurve()
 
-    # Set control colors and shapes
-    if SKMAP.__class__.__name__ == 'DazMap':
-        pm.mel.source(
-            "C:/Users/DSY/Documents/Maya/2018/scripts/AutoRig/AS5_SetControls.mel")
-
-    if SKMAP.__class__.__name__ == 'Ue4Map':
-        pm.mel.source(
-            "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/AS5Controls_UE4.mel")
-
     pm.select(ik_ctrl)
+
+
+def postAddWeightDrivers():
+    for bs_name in ['MorphsHead', 'MorphsBody']:
+        for driver in DRIVERS:
+            createWtDrivers(bs_name, morph_name=driver, **DRIVERS[driver])
+
+    wd_grp = pm.createNode('transform', n='WeightDrivers')
+    for wt_drv in pm.ls('wtDrv*', et='transform'):
+        wt_drv.setParent(wd_grp)
+    wd_grp.visibility.set(False)
+    wd_grp.setParent('Main')

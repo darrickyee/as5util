@@ -1,7 +1,7 @@
 from .abstract import AbstractJointMap
 
 
-class DazMap(AbstractJointMap):
+class G8fMap(AbstractJointMap):
 
     @property
     def joint_map(self):
@@ -38,7 +38,6 @@ class DazMap(AbstractJointMap):
                 'Shoulder_R': 'rShldrBend',
                 'Elbow_R': 'rForearmBend',
                 'Wrist_R': 'rHand',
-                'Cup_R': 'rHand',
                 'ThumbFinger1_R': 'rThumb1',
                 'ThumbFinger2_R': 'rThumb2',
                 'ThumbFinger3_R': 'rThumb3',
