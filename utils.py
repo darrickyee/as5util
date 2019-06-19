@@ -41,7 +41,7 @@ def getPoleVector(start, mid, end):
     locs = [xform.getTranslation(space='world') for xform in [start, mid, end]]
     vec_basen = (locs[2] - locs[0]).normal()
     vec_mid = (locs[1] - locs[0])
-    pole_vec = (vec_mid - vec_mid.dot(vec_basen)*vec_basen).normal()
+    pole_vec = (vec_mid - vec_mid.dot(vec_basen)*vec_basen)
 
     return pole_vec
 

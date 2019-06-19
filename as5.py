@@ -65,6 +65,7 @@ def preBuild(skel_map_name):
 
     for jnt in ['Spine1_M', 'Knee_R']:
         joint = sk_joints[jnt]
+
         # Manual transform for spine base
         if jnt == 'Spine1_M':
             pm.move(joint, joint.getParent().getTranslation(
@@ -73,17 +74,24 @@ def preBuild(skel_map_name):
 
         # Manual transform for knee
         if jnt == 'Knee_R':
+
             curr_vec = getPoleVector(*pm.ls(['Hip', 'Knee', 'Ankle']))
+            curr_vec[1] = 0
+            curr_len = curr_vec.length()
+
             tgt_vec = getPoleVector(*pm.ls(['Hip', 'Ankle', 'Toes']))
-            diff_vec = -tgt_vec - curr_vec
+            tgt_vec[1] = 0
+            tgt_vec = -tgt_vec.normal()
 
-            pm.move(joint, (diff_vec[0], 0, diff_vec[-1]),
-                    r=True, ws=True, pcp=True)
+            diff_vec = tgt_vec*curr_len - curr_vec
 
+            pm.move(joint, diff_vec, r=True, ws=True, pcp=True)
+
+    # Custom transforms
     for jnt in sk_xforms:
         joint = sk_joints[jnt]
         pm.move(joint, joint.getParent().getTranslation(
-                space='world'), pcp=True)
+            space='world'), pcp=True)
         pm.move(joint, sk_xforms[jnt], r=True, ws=True, pcp=True)
 
     # Center mid joints
@@ -179,7 +187,14 @@ def postAddUe4Joints():
         jnt.setParent(pm.ls('DeformationSystem')[0])
         pm.delete(pm.parentConstraint(pm.ls(ctrl)[0], jnt))
         pm.makeIdentity(jnt, apply=True)
-        pm.parentConstraint(pm.ls(ctrl)[0], jnt)
+
+        if 'IKArm' in ctrl:
+            tgt = pm.ls('Wrist'+ctrl[-2:])[0]
+        elif 'IKLeg' in ctrl:
+            tgt = pm.ls('Ankle'+ctrl[-2:])[0]
+        else:
+            tgt = pm.ls(ctrl)[0]
+        pm.parentConstraint(tgt, jnt)
 
         jnt_list.append(jnt)
 
@@ -253,13 +268,18 @@ def setControlShapes(skel_map_name):
 def postOrientIkControl(ik_ctrl, joint):
     # NEED TO FIX UP CHILD ROTATE CONSTRAINTS
 
+    if 'Arm' in ik_ctrl.name():
+        limb = 'Arm'
+    else:
+        limb = 'Leg'
+
     side = ik_ctrl.name()[-2:]
 
     ctrl_cvs = ik_ctrl.getCVs(space='world')
     ctrl_childs = ik_ctrl.listRelatives(type='transform')
 
-    child_xf = pm.createNode('transform', n='IKOrigOffset'+side)
-    offset_xf = pm.createNode('transform', n='IKOrientOffset'+side)
+    child_xf = pm.createNode('transform', n='IKOrigOffset'+limb+side)
+    offset_xf = pm.createNode('transform', n='IKOrientOffset'+limb+side)
 
     offset_parent = ik_ctrl.getParent().getParent()
     offset_childs = offset_parent.listRelatives(type='transform')
@@ -283,6 +303,8 @@ def postOrientIkControl(ik_ctrl, joint):
     if 'Leg' in ik_ctrl.name():
         ik_ctrl.setCVs(ctrl_cvs, space='world')
         ik_ctrl.updateCurve()
+
+    pm.delete('PoleOffset'+limb+side+'_parentConstraint1')
 
     pm.select(ik_ctrl)
 
