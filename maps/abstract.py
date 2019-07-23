@@ -13,7 +13,7 @@ class AbstractJointMap(object):
         pass
 
     @abstractproperty
-    def custom_xforms(self):
+    def custom_locs(self):
         pass
 
     @property
@@ -32,4 +32,4 @@ class AbstractJointMap(object):
         if self.joint_map:
             return {jname: pm.ls(jname[:-2])[0] for jname in self.joint_map}
 
-        return
+        return {}

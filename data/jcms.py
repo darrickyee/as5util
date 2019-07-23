@@ -106,7 +106,14 @@ TARGET_MAP = {
 }
 
 
-def createWtDrivers(node_name, morph_name, joint_base, rotation, radius=None, keys=[(0.0, 0.0), (1.0, 1.0)], mirror=False, invert_axis=False):
+def createWtDrivers(node_name,
+                    morph_name,
+                    joint_base,
+                    rotation,
+                    radius=None,
+                    keys=((0.0, 0.0), (1.0, 1.0)),
+                    mirror=False,
+                    invert_axis=False):
     bs_node = pm.ls(node_name)[0]
 
     radius = radius or sum(rot**2 for rot in rotation)**(1.0/2.0)

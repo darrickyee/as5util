@@ -1,7 +1,7 @@
 from .abstract import AbstractJointMap
 
 
-class G8mMap(AbstractJointMap):
+class G8fMap(AbstractJointMap):
 
     @property
     def joint_map(self):
@@ -59,21 +59,11 @@ class G8mMap(AbstractJointMap):
                 'PinkyFinger3_R': 'rPinky3',
                 'PinkyFinger4_R': '',
                 'Eye_R': 'rEye',
-                'EyeEnd_R': '',
-                'TestesBase_M': 'Testes',
-                'Testis_R': 'rTeste',
-                'TestisEnd_R': '',
-                'Gens1_M': 'Gen1',
-                'Gens2_M': 'Gen2',
-                'Gens3_M': 'Gen3',
-                'Gens4_M': 'Gen4',
-                'Gens5_M': 'Gen5',
-                'Gens6_M': 'Gen6',
-                'GensEnd_M': '',
+                'EyeEnd_R': ''
                 }
 
     @property
-    def custom_xforms(self):
+    def custom_locs(self):
         return {'BreastEnd_R': (-0.7507, 0.0609, 2.0745),
                 'BreastMid_R': (-5.4764, 4.5825, 15.071),
                 'ButtockBase_R': (-6.7316, -11.1316, -7.9212),
@@ -89,7 +79,4 @@ class G8mMap(AbstractJointMap):
                 'RingFinger4_R': (-1.1531, -1.7006, -0.0962),
                 'ThumbFinger4_R': (-0.7817, -2.2185, 1.468),
                 'ToesEnd_R': (-1.7017, -1.5189, 4.9737),
-                'TongueEnd_M': (0.0, 0.0426, 1.4055),
-                'GensEnd_M': (0.0, -0.3206, 1.624),
-                'TestisEnd_R': (0.0, -3.0869, 0.3015)
-                }
+                'TongueEnd_M': (0.0, 0.0426, 1.4055)}

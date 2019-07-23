@@ -47,7 +47,7 @@ class Ue4Map(AbstractJointMap):
                 }
 
     @property
-    def custom_xforms(self):
+    def custom_locs(self):
         return {
             'ThumbFinger4_R': (0.2874, -2.7302, 1.9647),
             'HeadEnd_M': (0.0, 16.947, -0.0),

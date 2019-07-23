@@ -16,6 +16,27 @@ def lockAndHideAttrs(node_list, attr_list=['scaleX', 'scaleY', 'scaleZ']):
             node.setAttr(attr_name, lock=True, keyable=False)
 
 
+def makeLockXYZ(xf_name, unlock=False):
+
+    def lockFunc(xforms):
+        xforms = pm.ls(xforms)
+        xf_attrs = [xf_name+axis for axis in ('X', 'Y', 'Z')]
+
+        for xform in xforms:
+            for xf_attr in xf_attrs:
+                xform.attr(xf_attr).set(k=unlock, lock=not unlock)
+
+    return lockFunc
+
+
+lockTranslate = makeLockXYZ('translate')
+unlockTranslate = makeLockXYZ('translate', unlock=True)
+lockRotate = makeLockXYZ('rotate')
+unlockRotate = makeLockXYZ('rotate', unlock=True)
+lockScale = makeLockXYZ('scale')
+unlockScale = makeLockXYZ('scale', unlock=True)
+
+
 def getPoleVector(start, mid, end):
     """
     Returns a unit pole vector for `start`, `mid`, and `end` transforms.
