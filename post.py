@@ -1,5 +1,6 @@
 import pymel.core as pm
 
+from .data import SPACE_ARGS
 from .utils import createControlCurve, lockAndHideAttrs
 
 
@@ -68,6 +69,8 @@ def postBuild(skel_map_name):
 
     # Hide joints, add to display layer
     postCreateJointLayer()
+
+    postAddSpaceSwitches(SPACE_ARGS)
 
 
 def addBlendShapes(name_space):
@@ -246,3 +249,8 @@ def postCreateJointLayer():
 
     layer.addMembers(deform_joints)
     layer.displayType.set(2)
+
+
+def postAddSpaceSwitches(args_list):
+    for arg_dict in args_list:
+        spaceSwitch(**arg_dict)
