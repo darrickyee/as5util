@@ -1,6 +1,6 @@
 from functools import partial
 import pymel.core as pm
-from .shapes import ControlShapes
+from .data import CTRL_SHAPES
 
 CONTROL_COLORS = {
     'Left': (1.0, 0.0, 0.0),
@@ -10,7 +10,7 @@ CONTROL_COLORS = {
 }
 
 
-def lockAndHideAttrs(node_list, attr_list=['scaleX', 'scaleY', 'scaleZ']):
+def lockAndHideAttrs(node_list, attr_list=('scaleX', 'scaleY', 'scaleZ')):
     for node in node_list:
         for attr_name in attr_list:
             node.setAttr(attr_name, lock=True, keyable=False)
@@ -40,7 +40,7 @@ unlockScale = makeLockXYZ('scale', unlock=True)
 def getPoleVector(start, mid, end):
     """
     Returns a unit pole vector for `start`, `mid`, and `end` transforms.
-    The pole vector is (parallel to) the vector orthogonal to the vector 
+    The pole vector is (parallel to) the vector orthogonal to the vector
     between `start` and `end` that passes through `mid`.
     (Note that `start` and `end` are interchangeable.)
 
@@ -59,7 +59,8 @@ def getPoleVector(start, mid, end):
 
     """
 
-    locs = [xform.getTranslation(space='world') for xform in [start, mid, end]]
+    locs = [xform.getTranslation(space='world')
+            for xform in [start, mid, end]]
     vec_basen = (locs[2] - locs[0]).normal()
     vec_mid = (locs[1] - locs[0])
     pole_vec = (vec_mid - vec_mid.dot(vec_basen)*vec_basen)
@@ -139,7 +140,7 @@ def createControlCurve(name=None, ctrl_type='FK', size=1.0, color=(1.0, 1.0, 0.1
 
     """
 
-    shape_args = ControlShapes.get(ctrl_type.lower(), ControlShapes['other'])
+    shape_args = CTRL_SHAPES.get(ctrl_type.lower(), CTRL_SHAPES['other'])
 
     if name:
         shape_args.update({'name': name})

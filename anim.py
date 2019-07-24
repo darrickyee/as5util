@@ -7,11 +7,11 @@ CLIPBOARD = dict()
 def zeroControls():
     for ctrl in pm.ls(sl=True):
         ctrl.rotate.set((0, 0, 0))
-    if 'IK' in ctrl.name():
-        ctrl.translate.set((0, 0, 0))
+        if 'IK' in ctrl.name():
+            ctrl.translate.set((0, 0, 0))
 
 
-jnt_grps = {
+JNT_GRPS = {
     'Arm': ['Shoulder', 'Elbow', 'Wrist'],
     'Leg': ['Hip', 'Knee', 'Ankle', 'Toes']
 }
@@ -29,7 +29,7 @@ def alignFk2Ik(ik_ctrl):
 
     side = ik_ctrl.name()[-2:]
 
-    jnts = pm.ls([jname+side for jname in jnt_grps[grp_name]])
+    jnts = pm.ls([jname+side for jname in JNT_GRPS[grp_name]])
     fk_ctrls = pm.ls(['FK'+jnt.name() for jnt in jnts])
 
     for i, fk in enumerate(fk_ctrls):
@@ -38,10 +38,10 @@ def alignFk2Ik(ik_ctrl):
 
 def alignIk2Fk(fk_ctrl):
     side = fk_ctrl.name()[-2:]
-    grp_name = [grp for grp in jnt_grps.keys() if fk_ctrl.name()[
-        2:-2] in jnt_grps[grp]][0]
+    grp_name = [grp for grp in JNT_GRPS.keys() if fk_ctrl.name()[
+        2:-2] in JNT_GRPS[grp]][0]
 
-    jnts = pm.ls([jname+side for jname in jnt_grps[grp_name]])
+    jnts = pm.ls([jname+side for jname in JNT_GRPS[grp_name]])
 
     jnt_chain = jnts[:3]
 
@@ -61,6 +61,10 @@ def alignIk2Fk(fk_ctrl):
 
 
 def mirrorControls(center_xform=None):
+
+    if not center_xform:
+        center_xform = pm.ls('RootX_M', type='transform')
+        center_xform = center_xform[0] if center_xform else None
 
     side_suffixes = ['_L', '_R']
 
