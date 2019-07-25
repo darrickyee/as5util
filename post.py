@@ -1,6 +1,6 @@
 import pymel.core as pm
-
-from .data import SPACE_ARGS
+from spaceSwitchTool import spaceSwitchSetup as switchSetup
+from .data import getSpaceSwitchArgs, SPACE_LIST
 from .utils import createControlCurve, lockAndHideAttrs
 
 
@@ -14,6 +14,8 @@ CTRL_SHAPE_FILES = {
     'g8m': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/data/ctrls_g8m.mel",
     'ue4': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/data/ctrls_ue4.mel"
 }
+
+SPACE_ARGS = getSpaceSwitchArgs(SPACE_LIST)
 
 
 def postBuild(skel_map_name):
@@ -70,7 +72,53 @@ def postBuild(skel_map_name):
     # Hide joints, add to display layer
     postCreateJointLayer()
 
+    # Breasts
+    for xform in ('FKOffsetBreastBase'+side for side in ('_L', '_R')):
+        pm.orientConstraint(('Chest_M', 'Spine3_M'), xform, mo=True)
+
+    # Add spaces
     postAddSpaceSwitches(SPACE_ARGS)
+
+
+def postAddSpaceSwitches(args_list):
+    ss_win = switchSetup.SpaceSwitchWindow()
+    for arg_dict in args_list:
+        ctrl_node = pm.ls(arg_dict['controller'])
+        if not ctrl_node:
+            raise ValueError("Controller '{}' not found.".format(
+                arg_dict['controller']))
+
+        pm.delete(ctrl_node[0].getParent().listRelatives(type='constraint'))
+
+        setSpaceSwitchProperties(ss_win, arg_dict)
+
+        ss_win.generateSpaces()
+
+
+def setSpaceSwitchProperties(space_switch_window, arg_dict):
+    space_switch_window.clearSpacesFrame()
+
+    cons_dict = {
+        'parent': 0,
+        'point': 1,
+        'orient': 2
+    }
+
+    space_switch_window.drivenNodeEdit.setText(arg_dict['drivenNode'])
+    space_switch_window.switchControllerEdit.setText(arg_dict['controller'])
+    space_switch_window.constraintComboBox.setCurrentIndex(
+        cons_dict.get(arg_dict['constraintType'], 0))
+    space_switch_window.spacesEdit.setText(arg_dict['spacesGrp'])
+    space_switch_window.attributeNameEdit.setText(arg_dict['attrName'])
+
+    for space in arg_dict['driverSpaces']:
+        new_space = space_switch_window.addSpaceLayout(False)
+        new_space.driverNodeEdit.setText(space.keys()[0])
+        new_space.displayNameEdit.setText(space.values()[0])
+
+    return space_switch_window
+
+    # self.drivenNode, self.switchController, self.constraintType, spaces, self.spacesGroup, self.switchAttribute
 
 
 def addBlendShapes(name_space):
@@ -249,8 +297,3 @@ def postCreateJointLayer():
 
     layer.addMembers(deform_joints)
     layer.displayType.set(2)
-
-
-def postAddSpaceSwitches(args_list):
-    for arg_dict in args_list:
-        spaceSwitch(**arg_dict)

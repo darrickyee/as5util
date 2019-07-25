@@ -1,5 +1,7 @@
+import pymel.core as pm
 
-_SPACE_LIST = [
+
+SPACE_LIST = [
     {'controller': 'IKArm',
      'driverSpaces': [
          {'DeformationSystem': 'World'},
@@ -13,21 +15,12 @@ _SPACE_LIST = [
          {'DeformationSystem': 'World'},
          {'Pelvis_M': 'Pelvis'}
      ]},
-    {'controller': 'FKHead_M',
-     'driverSpaces': [
-         {'DeformationSystem': 'World'},
-         {'Neck_M': 'Neck'}
-     ],
-        'constraintType': 'orient'
-     },
     {'controller': 'AimEye_M',
      'driverSpaces': [
-         {'DeformationSystem': 'World'},
-         {'Head_M': 'Head'}
+         {'Head_M': 'Head'},
+         {'DeformationSystem': 'World'}
      ]}
 ]
-
-SPACE_ARGS = getSpaceSwitchArgs(_SPACE_LIST)
 
 
 def getSpaceSwitchArgs(args_list):
@@ -71,16 +64,8 @@ def makeArgs(controller, **kwargs):
     kwargs = {key: val for key, val in kwargs.items()
               if key in base_dict}
 
-    ctrl = controller
-    prefix = ''
-
-    for pre in 'FK', 'IK', 'Aim':
-        if controller.startswith(pre):
-            ctrl = ctrl.lstrip(pre)
-            prefix = pre
-
     kwargs['controller'] = controller
-    kwargs['drivenNode'] = prefix+'Extra'+ctrl
+    kwargs['drivenNode'] = pm.ls(controller)[0].getParent().name()
 
     base_dict.update(kwargs)
 
