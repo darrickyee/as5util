@@ -66,6 +66,7 @@ def makeArgs(controller, **kwargs):
 
     kwargs['controller'] = controller
     kwargs['drivenNode'] = pm.ls(controller)[0].getParent().name()
+    kwargs['spacesGrp'] = 'SpaceSystem'
 
     base_dict.update(kwargs)
 

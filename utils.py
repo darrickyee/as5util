@@ -83,46 +83,6 @@ def orientJoint(joint, target, up_vector=(0, 1, 0), world_up=(0, 1, 0)):
         target.setParent(joint)
 
 
-def addSpace(target, control_obj, orient_only=False):
-    """
-    Adds a target space to the current control object.
-
-    Parameters
-    ----------
-    target : pymel.nodetypes.Transform
-        Target object for constraint
-    control_obj : pymel.nodetypes.Transform
-        Control object.  Target object will be added as constraint target for the parent "offset" transform for the control.
-    orient_only : bool
-        Use orient constraint? (the default is False, which uses a parent constraint)
-
-    """
-
-    if orient_only:
-        constrain = pm.orientConstraint
-        constraint_desc = 'orient'
-    else:
-        constrain = pm.parentConstraint
-        constraint_desc = 'parent'
-
-    # Add type checking?
-    target_name = target.nodeName()
-    control_offset = control_obj.getParent()
-
-    constraint_obj = constrain(target, control_offset, mo=True)
-    target_index = constraint_obj.getTargetList().index(target)
-    constraint_wt_attr = constraint_obj.getWeightAliasList()[target_index]
-
-    control_offset.addAttr("wt_{0}_{1}".format(
-        constraint_desc, target_name), at=float, min=0.0, max=1.0, keyable=True)
-    control_wt_attr = control_offset.attr(
-        "wt_{0}_{1}".format(constraint_desc, target_name))
-
-    pm.connectAttr(control_wt_attr, constraint_wt_attr)
-
-    return(control_wt_attr)
-
-
 def createControlCurve(name=None, ctrl_type='FK', size=1.0, color=(1.0, 1.0, 0.15)):
     """
     Creates a curve using predefined parameters.
@@ -158,14 +118,6 @@ def createControlCurve(name=None, ctrl_type='FK', size=1.0, color=(1.0, 1.0, 0.1
     return(crv)
 
 
-def createMayaNode(name, node_func=partial(pm.createNode, 'transform'), transform=None):
-    new_node = node_func(name=name)
-    if transform is not None:
-        new_node.setTransformation(transform.getMatrix(ws=True))
-
-    return new_node
-
-
 def createNodeChain(input_xforms, node_func=partial(pm.createNode, 'transform'), name_list=None, prefix='_'):
     if not isinstance(input_xforms, list):
         input_xforms = [input_xforms]
@@ -182,3 +134,39 @@ def createNodeChain(input_xforms, node_func=partial(pm.createNode, 'transform'),
         node_list.append(new_node)
 
     return node_list
+
+
+def alignToWorldVector(xform, aim_x=(1, 0, 0), aim_y=(0, 1, 0), freeze=False):
+    """
+    Rotates transform so that axes align with specified world-space directions.
+
+    Parameters
+    ----------
+    xform : pm.nt.Transform
+        Transform to rotate.
+    aim_x : tuple, optional
+        World-space direction for the x-axis of `xform`.
+    aim_y : tuple, optional
+        World-space direction for the y-axis of `xform`.  If not orthogonal to `aim_x`,
+        the y-axis will attempt to be as close as possible to this vector.
+    freeze : bool, optional
+        Freeze transformation if True. Default is False.
+
+    """
+
+    xform = pm.ls(xform)[0]
+
+    xf_node = pm.createNode('transform')
+    pm.move(xf_node, xform.getTranslation(ws=True))
+
+    aim_node = pm.createNode('transform')
+    pm.move(aim_node, xform.getTranslation(space='world') + aim_x)
+
+    pm.delete(pm.aimConstraint(aim_node, xf_node,
+                               worldUpVector=aim_y), aim_node)
+
+    xform.setRotation(xf_node.getRotation(ws=True), ws=True)
+    pm.delete(xf_node)
+
+    if freeze:
+        pm.makeIdentity(xform, apply=True)

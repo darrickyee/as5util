@@ -15,8 +15,6 @@ CTRL_SHAPE_FILES = {
     'ue4': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/data/ctrls_ue4.mel"
 }
 
-SPACE_ARGS = getSpaceSwitchArgs(SPACE_LIST)
-
 
 def postBuild(skel_map_name):
 
@@ -77,10 +75,15 @@ def postBuild(skel_map_name):
         pm.orientConstraint(('Chest_M', 'Spine3_M'), xform, mo=True)
 
     # Add spaces
-    postAddSpaceSwitches(SPACE_ARGS)
+    postAddSpaceSwitches(getSpaceSwitchArgs(SPACE_LIST))
 
 
 def postAddSpaceSwitches(args_list):
+    if pm.ls('SpaceSystem'):
+        pm.delete('SpaceSystem')
+
+    pm.createNode('transform', n='SpaceSystem').setParent('Main')
+
     ss_win = switchSetup.SpaceSwitchWindow()
     for arg_dict in args_list:
         ctrl_node = pm.ls(arg_dict['controller'])
@@ -149,7 +152,7 @@ def postAddUe4Joints():
     # Add UE4 IK joints
     jnt_list = list()
 
-    for ctrl in ['AimEye_M'] + [cname+side
+    for ctrl in ['AimEye_M', 'RootX_M'] + [cname+side
                                 for cname in ['IKArm', 'PoleArm', 'IKLeg', 'PoleLeg']
                                 for side in ['_R', '_L']]:
 
@@ -233,6 +236,9 @@ def postAddClavicleIK():
 def setControlShapes(skel_map_name):
     # Set control colors and shapes
     pm.mel.source(CTRL_SHAPE_FILES[skel_map_name])
+    # Center pivots for FKIK controls
+    for ctrl in pm.ls(['FKIK{}*_*'.format(limb) for limb in ('Arm', 'Leg', 'Spine', 'Spline')], type='transform'):
+        pm.xform(ctrl, cp=True)
 
 
 def postOrientIkControl(ik_ctrl, joint):
@@ -276,7 +282,8 @@ def postOrientIkControl(ik_ctrl, joint):
 
     if pm.ls('PoleOffset'+limb+side+'_parentConstraint1'):
         pm.delete('PoleOffset'+limb+side+'_parentConstraint1')
-        pm.parentConstraint('IK'+limb+side, 'PoleOffset'+limb+side, mo=True)
+        pm.parentConstraint('IK'+limb+side, 'PoleOffset' +
+                            limb+side, mo=True, sr=('x', 'y', 'z'))
 
     pm.select(ik_ctrl)
 
