@@ -99,6 +99,8 @@ def postAddSpaceSwitches(args_list):
 
 
 def setSpaceSwitchProperties(space_switch_window, arg_dict):
+    # SpaceSwitch properties:
+    # self.drivenNode, self.switchController, self.constraintType, spaces, self.spacesGroup, self.switchAttribute
     space_switch_window.clearSpacesFrame()
 
     cons_dict = {
@@ -120,16 +122,6 @@ def setSpaceSwitchProperties(space_switch_window, arg_dict):
         new_space.displayNameEdit.setText(space.values()[0])
 
     return space_switch_window
-
-    # self.drivenNode, self.switchController, self.constraintType, spaces, self.spacesGroup, self.switchAttribute
-
-
-def addBlendShapes(name_space):
-    pm.select(pm.ls('{0}:Morphs'.format(name_space))
-              [0].listRelatives(), r=True)
-    pm.select('{0}:Mesh'.format(name_space), add=True)
-    pm.blendShape(frontOfChain=1, n='Morphs{0}'.format(
-        name_space.replace('Geo', '')))
 
 
 def postUpdateSets(obj_set_dict):
@@ -153,8 +145,8 @@ def postAddUe4Joints():
     jnt_list = list()
 
     for ctrl in ['AimEye_M', 'RootX_M'] + [cname+side
-                                for cname in ['IKArm', 'PoleArm', 'IKLeg', 'PoleLeg']
-                                for side in ['_R', '_L']]:
+                                           for cname in ['IKArm', 'PoleArm', 'IKLeg', 'PoleLeg']
+                                           for side in ['_R', '_L']]:
 
         jnt = pm.createNode('joint', n='CTRL'+ctrl)
         jnt.setParent(pm.ls('DeformationSystem')[0])
