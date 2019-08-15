@@ -5,6 +5,7 @@ SPACE_LIST = [
     {'controller': 'IKArm',
      'driverSpaces': [
          {'DeformationSystem': 'World'},
+         {'Root_M': 'COM'},
          {'Chest_M': 'Chest'},
          {'Hip': 'Hip'},
          {'Knee': 'Knee'},

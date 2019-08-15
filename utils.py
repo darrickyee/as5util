@@ -10,6 +10,13 @@ CONTROL_COLORS = {
 }
 
 
+def getAverageLoc(node_list):
+    locs = [pm.datatypes.Vector(pm.xform(node, query=True, t=True))
+            for node in node_list]
+
+    return sum(locs)/len(locs)
+
+
 def lockAndHideAttrs(node_list, attr_list=('scaleX', 'scaleY', 'scaleZ')):
     for node in node_list:
         for attr_name in attr_list:

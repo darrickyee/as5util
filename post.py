@@ -22,12 +22,12 @@ def postBuild(skel_map_name):
         'AllSet', 'ControlSet', 'DeformSet']}
 
     # Add twist joints
-    twist_joints = postAddTwistJoints()
+    twist_joints = _postAddTwistJoints()
     for set_name in ['AllSet', 'DeformSet']:
         obj_sets[set_name].addMembers(twist_joints)
 
-    # Add IK Clavicle
-    ik_clav = postAddClavicleIK()
+    # Add IK Scapula
+    ik_clav = _postAddScapulaIK()
     for set_name in ['AllSet', 'ControlSet']:
         obj_sets[set_name].addMembers(ik_clav)
 
@@ -37,7 +37,7 @@ def postBuild(skel_map_name):
                      ('IKArm_L', 'Wrist_L'),
                      ('IKLeg_R', 'Ankle_R'),
                      ('IKLeg_L', 'Ankle_L')]:
-        postOrientIkControl(*pm.ls(ctrljnts))
+        _postOrientIkControl(*pm.ls(ctrljnts))
 
     # Center pivots for FK/IK controls and set to IK
     fkik_nodes = [ctrl for ctrl in pm.ls(
@@ -52,10 +52,10 @@ def postBuild(skel_map_name):
     pm.ls('IKSpline3_M')[0].volume.set(0)
 
     # Add UE4 IK joints
-    postAddUe4Joints()
+    _postAddUe4Joints()
 
     # Update sets
-    postUpdateSets(obj_sets)
+    _postUpdateSets(obj_sets)
 
     # Lock/hide scale for all controls
     lockAndHideAttrs([ctrl for ctrl in obj_sets['ControlSet']],
@@ -65,20 +65,20 @@ def postBuild(skel_map_name):
                       if ctrl.name()[:2] == 'FK'], attr_list=('translateX', 'translateY', 'translateZ'))
 
     # Update control colors/shapes
-    setControlShapes(skel_map_name)
+    _setControlShapes(skel_map_name)
 
     # Hide joints, add to display layer
-    postCreateJointLayer()
+    _postCreateJointLayer()
 
     # Breasts
     for xform in ('FKOffsetBreastBase'+side for side in ('_L', '_R')):
         pm.orientConstraint(('Chest_M', 'Spine3_M'), xform, mo=True)
 
     # Add spaces
-    postAddSpaceSwitches(getSpaceSwitchArgs(SPACE_LIST))
+    _postAddSpaceSwitches(getSpaceSwitchArgs(SPACE_LIST))
 
 
-def postAddSpaceSwitches(args_list):
+def _postAddSpaceSwitches(args_list):
     if pm.ls('SpaceSystem'):
         pm.delete('SpaceSystem')
 
@@ -93,12 +93,12 @@ def postAddSpaceSwitches(args_list):
 
         pm.delete(ctrl_node[0].getParent().listRelatives(type='constraint'))
 
-        setSpaceSwitchProperties(ss_win, arg_dict)
+        _setSpaceSwitchProperties(ss_win, arg_dict)
 
         ss_win.generateSpaces()
 
 
-def setSpaceSwitchProperties(space_switch_window, arg_dict):
+def _setSpaceSwitchProperties(space_switch_window, arg_dict):
     # SpaceSwitch properties:
     # self.drivenNode, self.switchController, self.constraintType, spaces, self.spacesGroup, self.switchAttribute
     space_switch_window.clearSpacesFrame()
@@ -124,12 +124,10 @@ def setSpaceSwitchProperties(space_switch_window, arg_dict):
     return space_switch_window
 
 
-def postUpdateSets(obj_set_dict):
-    joints = pm.ls('Root_M') + \
-        pm.ls('Root_M')[0].listRelatives(ad=True, type='joint')
+def _postUpdateSets(obj_set_dict):
+    joints = pm.ls('DeformationSystem')[0].listRelatives(ad=True, type='joint')
     ctrls = [ctrl for ctrl in obj_set_dict['ControlSet']
-             if ((ctrl.name()[:2] in ['FK', 'IK']) or
-                 (ctrl.name()[:4] in ['AimE', 'Fing', 'Pole', 'Roll', 'Root'])) and
+             if ctrl.name().startswith(('FK', 'IK', 'AimE', 'Fing', 'Pole', 'Roll', 'Root')) and
              'Extra' not in ctrl.name() and
              'cv' not in ctrl.name()]
 
@@ -140,7 +138,7 @@ def postUpdateSets(obj_set_dict):
         obj_set_dict[set_name].addMembers(set_members[set_name])
 
 
-def postAddUe4Joints():
+def _postAddUe4Joints():
     # Add UE4 IK joints
     jnt_list = list()
 
@@ -149,7 +147,7 @@ def postAddUe4Joints():
                                            for side in ['_R', '_L']]:
 
         jnt = pm.createNode('joint', n='CTRL'+ctrl)
-        jnt.setParent(pm.ls('DeformationSystem')[0])
+        jnt.setParent('DeformationSystem')
         pm.delete(pm.parentConstraint(pm.ls(ctrl)[0], jnt))
         pm.makeIdentity(jnt, apply=True)
 
@@ -166,7 +164,7 @@ def postAddUe4Joints():
     return jnt_list
 
 
-def postAddTwistJoints():
+def _postAddTwistJoints():
     # Add twist joints
     jnt_list = list()
 
@@ -189,8 +187,8 @@ def postAddTwistJoints():
     return jnt_list
 
 
-def postAddClavicleIK():
-    # Add clavicle IK
+def _postAddScapulaIK():
+    # Add Scapula IK
     ctrl_list = list()
 
     for side in SIDE_COLOR:
@@ -225,7 +223,7 @@ def postAddClavicleIK():
     return ctrl_list
 
 
-def setControlShapes(skel_map_name):
+def _setControlShapes(skel_map_name):
     # Set control colors and shapes
     pm.mel.source(CTRL_SHAPE_FILES[skel_map_name])
     # Center pivots for FKIK controls
@@ -233,7 +231,7 @@ def setControlShapes(skel_map_name):
         pm.xform(ctrl, cp=True)
 
 
-def postOrientIkControl(ik_ctrl, joint):
+def _postOrientIkControl(ik_ctrl, joint):
     # NEED TO FIX UP CHILD ROTATE CONSTRAINTS
 
     if 'Arm' in ik_ctrl.name():
@@ -280,7 +278,7 @@ def postOrientIkControl(ik_ctrl, joint):
     pm.select(ik_ctrl)
 
 
-def postCreateJointLayer():
+def _postCreateJointLayer():
 
     for joint in pm.ls(type='joint'):
         joint.drawStyle.set(2)
@@ -296,3 +294,4 @@ def postCreateJointLayer():
 
     layer.addMembers(deform_joints)
     layer.displayType.set(2)
+    layer.visibility.set(False)

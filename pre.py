@@ -1,7 +1,7 @@
 import pymel.core as pm
 
 from .data import G8fMap, G8mMap, Ue4Map
-from .utils import getPoleVector, orientJoint
+from .utils import getPoleVector, orientJoint, getAverageLoc
 
 FITSKEL_FILES = {
     'g8f': 'C:/Users/DSY/Documents/Maya/scripts/AdvancedSkeleton5Files/fitSkeletons/daz_g8f.ma',
@@ -42,11 +42,18 @@ def preBuild(skel_map_name, load=True, fitskel_file=None):
                 jnt_node[0].getParent().getTranslation(space='world'), pcp=True)
         pm.move(jnt_node[0], (0, 1, 0), r=True, ws=True, pcp=True)
 
-    alignKnee()
+    _alignKnee()
 
-    # Custom translations
+    # Re-apply custom translations
     for jnt_node in custom_dict:
         jnt_node.setTranslation(custom_dict[jnt_node])
+
+    # Custom locations for breast
+    for jnt_name in 'BreastMid', 'BreastEnd':
+        jnt_loc = getAverageLoc(vtx
+                                for vtx_list in pm.ls('Vtx'+jnt_name+'_R', r=True)[0].members()
+                                for vtx in vtx_list)
+        pm.move(jnt_name, jnt_loc)
 
     # Center mid joints
     for joint in [j for j in sk_map.joint_map if j[-2:] == '_M']:
@@ -55,7 +62,7 @@ def preBuild(skel_map_name, load=True, fitskel_file=None):
             pm.move(jnt_node[0], 0, x=True, pcp=True)
 
     # Custom orientations
-    applyCustomOrients(('BreastBase', 'BreastMid'))
+    _applyCustomOrients(('BreastBase', 'BreastMid'))
 
     # Zero out end joint orientations
     end_joints = [jnt for jnt in pm.ls(
@@ -79,7 +86,7 @@ def alignFitSkeleton(sk_map):
             pm.move(jnt[0], tgt[0].getTranslation(ws=True), pcp=True)
 
 
-def alignKnee():
+def _alignKnee():
     joint = pm.ls('Knee')
     if joint:
         curr_vec = getPoleVector(*pm.ls(['Hip', 'Knee', 'Ankle']))
@@ -95,7 +102,7 @@ def alignKnee():
         pm.move(joint[0], diff_vec, r=True, ws=True, pcp=True)
 
 
-def applyCustomOrients(joints):
+def _applyCustomOrients(joints):
     joints = pm.ls(joints)
 
     for jnt_node in joints:
