@@ -16,6 +16,16 @@ SPACE_LIST = [
          {'DeformationSystem': 'World'},
          {'Pelvis_M': 'Pelvis'}
      ]},
+     {'controller': 'PoleArm',
+     'driverSpaces': [
+         {'DeformationSystem': 'World'},
+         {'IKArm': 'IKArm'}
+     ]},
+     {'controller': 'PoleLeg',
+     'driverSpaces': [
+         {'DeformationSystem': 'World'},
+         {'IKLeg': 'IKLeg'}
+     ]},
     {'controller': 'AimEye_M',
      'driverSpaces': [
          {'Head_M': 'Head'},

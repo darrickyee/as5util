@@ -81,7 +81,7 @@ def alignFitSkeleton(sk_map):
     for joint in joint_map:
         tgt = pm.ls(joint_map[joint], type='transform')
         jnt = pm.ls(joint.split('_')[0], type='transform')
-        print('Aligning {0} to {1}'.format(jnt, tgt))
+        # print('Aligning {0} to {1}'.format(jnt, tgt))
         if jnt and tgt:
             pm.move(jnt[0], tgt[0].getTranslation(ws=True), pcp=True)
 

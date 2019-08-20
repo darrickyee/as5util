@@ -50,11 +50,15 @@ def setTPose():
             # Move pole vector controls
             if limb == 'Arm':
                 pole_offset = (0, 0, -50)
+                origin = 'Elbow'
             else:
                 pole_offset = (0, 0, 50)
+                origin = 'Knee'
 
             pm.move('Pole'+limb+side,
-                    pm.ls('Elbow'+side)[0].getTranslation(ws=True)+pole_offset)
+                    pm.ls(origin+side)[0].getTranslation(ws=True)+pole_offset)
+
+            pm.setAttr('FKIK{0}{1}.FKIKBlend'.format(limb, side), 10)
 
 
 def _createHikPoleControls():
