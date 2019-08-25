@@ -4,9 +4,9 @@ from .data import G8fMap, G8mMap, Ue4Map
 from .utils import getPoleVector, orientJoint, getAverageLoc
 
 FITSKEL_FILES = {
-    'g8f': 'C:/Users/DSY/Documents/Maya/scripts/AdvancedSkeleton5Files/fitSkeletons/daz_g8f.ma',
-    'g8m': 'C:/Users/DSY/Documents/Maya/scripts/AdvancedSkeleton5Files/fitSkeletons/daz_g8m.ma',
-    'ue4': 'C:/Users/DSY/Documents/Maya/scripts/AdvancedSkeleton5Files/fitSkeletons/ue4.ma'
+    'g8f': 'C:/Users/Darrick/Documents/Maya/scripts/AdvancedSkeleton5Files/fitSkeletons/daz_g8f.ma',
+    'g8m': 'C:/Users/Darrick/Documents/Maya/scripts/AdvancedSkeleton5Files/fitSkeletons/daz_g8m.ma',
+    'ue4': 'C:/Users/Darrick/Documents/Maya/scripts/AdvancedSkeleton5Files/fitSkeletons/ue4.ma'
 }
 MAPS = {
     'g8f': G8fMap,

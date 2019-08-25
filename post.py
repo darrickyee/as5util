@@ -10,9 +10,9 @@ SIDE_COLOR = {
 }
 
 CTRL_SHAPE_FILES = {
-    'g8f': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/data/ctrls_g8f.mel",
-    'g8m': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/data/ctrls_g8m.mel",
-    'ue4': "C:/Users/DSY/Documents/Maya/2018/scripts/as5util/data/ctrls_ue4.mel"
+    'g8f': "C:/Users/Darrick/Documents/Maya/2018/scripts/as5util/data/ctrls_g8f.mel",
+    'g8m': "C:/Users/Darrick/Documents/Maya/2018/scripts/as5util/data/ctrls_g8m.mel",
+    'ue4': "C:/Users/Darrick/Documents/Maya/2018/scripts/as5util/data/ctrls_ue4.mel"
 }
 
 
