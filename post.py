@@ -72,7 +72,7 @@ def postBuild(skel_map_name):
 
     # Breasts
     for xform in ('FKOffsetBreastBase'+side for side in ('_L', '_R')):
-        pm.orientConstraint(('Chest_M', 'Spine3_M'), xform, mo=True)
+        pm.orientConstraint(('Chest_M', 'Spine3_M'), xform, mo=True).interpType.set(2)
 
     # Add spaces
     _postAddSpaceSwitches(getSpaceSwitchArgs(SPACE_LIST))
